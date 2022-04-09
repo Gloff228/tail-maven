@@ -1,0 +1,5 @@
+---src/test/kotlin/input/numString.txt---
+
+---src/test/kotlin/input/123.txt---
+
+---src/test/kotlin/input/poem.txt---
