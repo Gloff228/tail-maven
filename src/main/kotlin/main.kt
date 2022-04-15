@@ -3,10 +3,10 @@ import java.io.File
 import java.io.FileNotFoundException
 
 fun main(args: Array<String>) {
-    parsing(args)
+    parse(args)
 }
 
-fun parsing(args: Array<String>) {
+fun parse(args: Array<String>) {
     val parser = ArgParser("tail")
     val extractSymbols by parser.option(
         ArgType.Int,
@@ -19,67 +19,108 @@ fun parsing(args: Array<String>) {
         description = "Number of strings for output. Can't be used with -c"
     )
     val output by parser.option(ArgType.String, shortName = "o", fullName = "out", description = "Output file")
-        .default("console")
     val input by parser.argument(ArgType.String, description = "Input file").vararg()
 
     parser.parse(args)
 
     when {
         extractSymbols != null && extractStrings != null -> throw IllegalArgumentException("Can't use both -c and -n at the same time")
-        extractSymbols == null && extractStrings == null -> extracting(input, output, 10, null)
-        else -> extracting(input, output, extractStrings, extractSymbols)
+        extractSymbols == null && extractStrings == null -> extract(input, output, 10, null)
+        extractSymbols != null && extractSymbols!! < 0 || extractStrings != null && extractStrings!! < 0 -> throw IllegalArgumentException(
+            "Negative numbers cannot be used"
+        )
+        else -> extract(input, output, extractStrings, extractSymbols)
     }
 }
 
-fun extracting(inputFile: List<String>, outputFile: String, countStrings: Int?, countSymbols: Int?) {
-    val list = mutableListOf<String>() //собирает строки, которые будут выводиться в output файл
+fun extract(inputFiles: List<String>, outputFile: String?, countStrings: Int?, countSymbols: Int?) {
+    val fileStrings = mutableMapOf<String, MutableList<String>>()
+    val isFile = File(inputFiles[0]).exists()
+    var cmdStringNumber = 0
 
-    // проверка, является ли 1 элемент текстовым файлом (если нет, то последующие входные данные принимаются за простой текст)
-    if (inputFile[0].length < 4 || inputFile[0].substring(inputFile[0].length - 4, inputFile[0].length) != ".txt") {
-        val lines = inputFile.joinToString(separator = " ").split("\\n") //разделение текста cmd на строки
-        extractingSymbolOrString(lines, list, countSymbols, countStrings)
-    } else
-        for (file in inputFile) {
-            if (!File(file).exists()) throw FileNotFoundException("Called file does not exist") //исключение, если файла не существует
-            val lines = File(file).readLines() //разделение текста файла на строки
-            if (inputFile.size > 1) list.add("---$file---") //добавление названия файла при выводе, если файлов несколько
-            extractingSymbolOrString(lines, list, countSymbols, countStrings)
+    for (file in inputFiles) {
+        if (File(file).exists()) {
+            //исключения
+            if (!isFile) throw IllegalArgumentException("String cannot be used with a file on the same line")
+            if (file.substring(file.length - 4, file.length) != ".txt")
+                throw IllegalArgumentException("Invalid file format")
+
+            fileStrings[file] = mutableListOf()
+            val stringsOfFile = File(file).readLines() //разделение текста файла на строки
+            extractSymbolOrString(stringsOfFile, fileStrings[file]!!, countSymbols, countStrings)
+        } else {
+            //исключения
+            if (isFile) throw IllegalArgumentException("String cannot be used with a file on the same line")
+            if (file.length > 4 && file.substring(file.length - 4, file.length) == ".txt")
+                throw FileNotFoundException("Called file does not exist") //исключение, если файла не существует
+
+            cmdStringNumber++
+
+            fileStrings["cmd string $cmdStringNumber"] = mutableListOf()
+            val lineSep = System.lineSeparator().toString().replace("\r", "\\r").replace("\n", "\\n")
+            val stringsOfCommandLine = file.split(lineSep)
+
+            extractSymbolOrString(
+                stringsOfCommandLine,
+                fileStrings["cmd string $cmdStringNumber"]!!,
+                countSymbols,
+                countStrings
+            )
+
         }
-    output(list, outputFile)
+    }
+    output(fileStrings, outputFile)
 }
 
-fun extractingSymbolOrString(lines: List<String>, list: MutableList<String>, countSymbols: Int?, countStrings: Int?){
-    if (countStrings != null) extractingStrings(lines, list, countStrings)
-    else extractingSymbols(lines, list, countSymbols!!)
+fun extractSymbolOrString(
+    stringsOfFile: List<String>,
+    futureTextOfFile: MutableList<String>,
+    countSymbols: Int?,
+    countStrings: Int?
+) {
+    if (countStrings != null) extractStrings(stringsOfFile, futureTextOfFile, countStrings)
+    else extractSymbols(stringsOfFile, futureTextOfFile, countSymbols!!)
 }
 
-fun extractingStrings(lines: List<String>, list: MutableList<String>, count: Int) {
+fun extractStrings(stringsOfFile: List<String>, textOfFile: MutableList<String>, count: Int) {
     var countForFile = count
-    if (count >= lines.size) countForFile = lines.size //сокращение выводимых строк до количества строк в файле
-    for (line in (lines.size - countForFile) until lines.size) list.add(lines[line])
+    if (count >= stringsOfFile.size) countForFile =
+        stringsOfFile.size //сокращение выводимых строк до количества строк в файле
+    for (line in (stringsOfFile.size - countForFile) until stringsOfFile.size) textOfFile.add(stringsOfFile[line])
 }
 
-fun extractingSymbols(lines: List<String>, list: MutableList<String>, count: Int) {
+fun extractSymbols(stringsOfFile: List<String>, textOfFile: MutableList<String>, count: Int) {
     var string = ""
-    for (line in lines.reversed()) {
+    for (line in stringsOfFile.reversed()) {
         string = line + string
         if (string.length >= count) {
             string = string.substring(string.length - count, string.length)
             break
         }
     }
-    list.add(string)
+    textOfFile.add(string)
 }
 
-fun output(list: List<String>, outputFile: String) {
-    if (outputFile == "console") {
-        for (line in list) println(line)
-    } else {
-        val writer = File(outputFile).bufferedWriter()
-        for (line in list.indices) {
-            writer.write(list[line])
-            if (line != list.size - 1) writer.newLine()
+fun output(fileToStrings: MutableMap<String, MutableList<String>>, outputFile: String?) {
+    if (outputFile == null) {
+        for ((file, strings) in fileToStrings) {
+            if (fileToStrings.keys.size > 1) println("---$file---")
+            for (line in strings) {
+                println(line)
+            }
         }
-        writer.close()
+    } else {
+        File(outputFile).bufferedWriter().use {
+            for ((file, strings) in fileToStrings) {
+                if (fileToStrings.keys.size > 1) {
+                    it.write("---$file---")
+                    it.newLine()
+                }
+                for (line in strings) {
+                    it.write(line)
+                    it.newLine()
+                }
+            }
+        }
     }
 }

@@ -7,28 +7,29 @@ import java.io.FileNotFoundException
 class Tests{
 
     @Test
-    fun extracting(){
-        extracting(listOf("src/test/kotlin/input/123.txt"), "src/test/kotlin/output/output.txt", null, 2)
+    fun extract(){
+        extract(listOf("src/test/kotlin/input/123.txt"), "src/test/kotlin/output/output.txt", null, 2)
         assertEquals(File("src/test/kotlin/output/expectedOutput1.txt").readLines(), File("src/test/kotlin/output/output.txt").readLines())
         File("src/test/kotlin/output/output.txt").delete()
 
-        extracting(listOf("src/test/kotlin/input/numLines.txt", "src/test/kotlin/input/poem.txt"), "src/test/kotlin/output/output.txt", 5, null)
+        extract(listOf("src/test/kotlin/input/numLines.txt", "src/test/kotlin/input/poem.txt"), "src/test/kotlin/output/output.txt", 5, null)
         assertEquals(File("src/test/kotlin/output/expectedOutput2.txt").readLines(), File("src/test/kotlin/output/output.txt").readLines())
         File("src/test/kotlin/output/output.txt").delete()
 
-        extracting(listOf("src/test/kotlin/input/strLines.txt", "src/test/kotlin/input/123.txt", "src/test/kotlin/input/numLines.txt"), "src/test/kotlin/output/output.txt", null, 24)
+        extract(listOf("src/test/kotlin/input/strLines.txt", "src/test/kotlin/input/123.txt", "src/test/kotlin/input/numLines.txt"), "src/test/kotlin/output/output.txt", null, 24)
         assertEquals(File("src/test/kotlin/output/expectedOutput3.txt").readLines(), File("src/test/kotlin/output/output.txt").readLines())
         File("src/test/kotlin/output/output.txt").delete()
 
-        extracting(listOf("src/test/kotlin/input/numString.txt", "src/test/kotlin/input/123.txt", "src/test/kotlin/input/poem.txt"), "src/test/kotlin/output/output.txt", 10, null)
+        extract(listOf("src/test/kotlin/input/numString.txt", "src/test/kotlin/input/123.txt", "src/test/kotlin/input/poem.txt"), "src/test/kotlin/output/output.txt", 10, null)
         assertEquals(File("src/test/kotlin/output/expectedOutput4.txt").readLines(), File("src/test/kotlin/output/output.txt").readLines())
         File("src/test/kotlin/output/output.txt").delete()
 
-        extracting(listOf("src/test/kotlin/input/numString.txt", "src/test/kotlin/input/123.txt", "src/test/kotlin/input/poem.txt"), "src/test/kotlin/output/output.txt", null, 0)
+        extract(listOf("src/test/kotlin/input/numString.txt", "src/test/kotlin/input/123.txt", "src/test/kotlin/input/poem.txt"), "src/test/kotlin/output/output.txt", null, 0)
         assertEquals(File("src/test/kotlin/output/expectedOutput5.txt").readLines(), File("src/test/kotlin/output/output.txt").readLines())
         File("src/test/kotlin/output/output.txt").delete()
 
-        assertThrows(FileNotFoundException::class.java){ extracting(listOf("src/test/kotlin/input/fileNotFound.txt"), "src/test/kotlin/output/outputNotFound.txt", null, 12345) }
+        assertThrows(FileNotFoundException::class.java){ extract(listOf("src/test/kotlin/input/fileNotFound.txt"), "src/test/kotlin/output/outputNotFound.txt", null, 12345) }
+        assertThrows(IllegalArgumentException::class.java){ extract(listOf("src/test/kotlin/input/word.docx"), "src/test/kotlin/output/outputNotFound.txt", null, 12345) }
     }
 }
 
