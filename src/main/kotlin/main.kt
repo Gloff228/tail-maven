@@ -90,15 +90,17 @@ fun extractStrings(stringsOfFile: List<String>, textOfFile: MutableList<String>,
 }
 
 fun extractSymbols(stringsOfFile: List<String>, textOfFile: MutableList<String>, count: Int) {
-    var string = ""
-    for (line in stringsOfFile.reversed()) {
-        string = line + string
-        if (string.length >= count) {
-            string = string.substring(string.length - count, string.length)
-            break
+    if (count != 0) {
+        var string = ""
+        for (line in stringsOfFile.reversed()) {
+            string = line + string
+            if (string.length >= count) {
+                string = string.substring(string.length - count, string.length)
+                break
+            }
         }
+        textOfFile.add(string)
     }
-    textOfFile.add(string)
 }
 
 fun output(fileToStrings: MutableMap<String, MutableList<String>>, outputFile: String?) {
