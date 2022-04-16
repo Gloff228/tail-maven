@@ -1,0 +1,3 @@
+---src/test/resources/input/numString.txt---
+---src/test/resources/input/123.txt---
+---src/test/resources/input/poem.txt---

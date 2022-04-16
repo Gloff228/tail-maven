@@ -1,10 +1,10 @@
----src/test/kotlin/input/numLines.txt---
+---src/test/resources/input/numLines.txt---
 16
 17
 18
 19
 20
----src/test/kotlin/input/poem.txt---
+---src/test/resources/input/poem.txt---
 Кто здесь бродит по ночам.
 Из-за елки бы высокой
 Подсмотрел я на кругу:

@@ -1,8 +1,8 @@
----src/test/kotlin/input/numString.txt---
+---src/test/resources/input/numString.txt---
 123456789101112131415
----src/test/kotlin/input/123.txt---
+---src/test/resources/input/123.txt---
 123
----src/test/kotlin/input/poem.txt---
+---src/test/resources/input/poem.txt---
 Здесь вот когти, дальше — лыжи…
 Кто-то странный бегал здесь.
 Кабы твердо знал я тайну

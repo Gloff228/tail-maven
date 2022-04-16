@@ -1,0 +1,6 @@
+---src/test/resources/input/strLines.txt---
+nvcnmfvfjnfvnfvkfnvfnvqq
+---src/test/resources/input/123.txt---
+123
+---src/test/resources/input/numLines.txt---
+891011121314151617181920

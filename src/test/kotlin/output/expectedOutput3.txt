@@ -1,6 +1,0 @@
----src/test/kotlin/input/strLines.txt---
-nvcnmfvfjnfvnfvkfnvfnvqq
----src/test/kotlin/input/123.txt---
-123
----src/test/kotlin/input/numLines.txt---
-891011121314151617181920

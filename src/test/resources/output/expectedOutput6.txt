@@ -1,0 +1,6 @@
+---cmd string 1---
+3456789
+---cmd string 2---
+qwerty
+---cmd string 3---
+qazqaz1
