@@ -3,54 +3,61 @@ import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
 import java.io.File
 import java.io.FileNotFoundException
+import java.nio.file.Paths
+
+class ResourceReader {
+    fun pathResource(fileName: String): String {
+        val uri = this.javaClass.getResource("/$fileName").toURI()
+        return Paths.get(uri).toString()
+    }
+}
+
+fun getPath(fileName: String): String {
+    val reader = ResourceReader()
+    return reader.pathResource(fileName)
+}
+
+val file123 = getPath("input/123.txt")
+val filePoem = getPath("input/poem.txt")
+val fileWord = getPath("input/word.docx")
+val fileNumString = getPath("input/numString.txt")
+val expectedOutput1 = getPath("output/expectedOutput1.txt")
+val expectedOutput2 = getPath("output/expectedOutput2.txt")
 
 class Tests {
     @Test
-    fun extractSymbols() {
-        extract(listOf("src/test/resources/input/123.txt"), "src/test/resources/output/output.txt", null, 2)
+    fun extract() {
         assertEquals(
-            File("src/test/resources/output/expectedOutput1.txt").readLines(),
-            File("src/test/resources/output/output.txt").readLines()
+            mapOf(file123 to listOf("23")),
+            extract(listOf(file123), null, 2)
         )
-        File("src/test/resources/output/output.txt").delete()
+    }
 
-        extract(
-            listOf(
-                "src/test/resources/input/strLines.txt",
-                "src/test/resources/input/123.txt",
-                "src/test/resources/input/numLines.txt"
-            ), "src/test/resources/output/output.txt", null, 24
+    @Test
+    fun outputSymbols() {
+        output(
+            extract(listOf(file123), null, 2),
+            "src/test/resources/output/output.txt"
         )
         assertEquals(
-            File("src/test/resources/output/expectedOutput3.txt").readLines(),
+            File(expectedOutput1).readLines(),
             File("src/test/resources/output/output.txt").readLines()
         )
         File("src/test/resources/output/output.txt").delete()
     }
 
     @Test
-    fun extractStrings() {
-        extract(
-            listOf("src/test/resources/input/numLines.txt", "src/test/resources/input/poem.txt"),
-            "src/test/resources/output/output.txt",
-            5,
-            null
+    fun outputStrings() {
+        output(
+            extract(
+                listOf(filePoem),
+                5,
+                null
+            ),
+            "src/test/resources/output/output.txt"
         )
         assertEquals(
-            File("src/test/resources/output/expectedOutput2.txt").readLines(),
-            File("src/test/resources/output/output.txt").readLines()
-        )
-        File("src/test/resources/output/output.txt").delete()
-
-        extract(
-            listOf(
-                "src/test/resources/input/numString.txt",
-                "src/test/resources/input/123.txt",
-                "src/test/resources/input/poem.txt"
-            ), "src/test/resources/output/output.txt", 10, null
-        )
-        assertEquals(
-            File("src/test/resources/output/expectedOutput4.txt").readLines(),
+            File(expectedOutput2).readLines(),
             File("src/test/resources/output/output.txt").readLines()
         )
         File("src/test/resources/output/output.txt").delete()
@@ -58,34 +65,30 @@ class Tests {
 
     @Test
     fun zeroCountOfSymbols() {
-        extract(
-            listOf(
-                "src/test/resources/input/numString.txt",
-                "src/test/resources/input/123.txt",
-                "src/test/resources/input/poem.txt"
-            ), "src/test/resources/output/output.txt", null, 0
-        )
         assertEquals(
-            File("src/test/resources/output/expectedOutput5.txt").readLines(),
-            File("src/test/resources/output/output.txt").readLines()
+            mapOf(filePoem to listOf(), file123 to listOf(), fileNumString to listOf<String>()),
+            extract(
+                listOf(
+                    fileNumString,
+                    file123,
+                    filePoem
+                ), null, 0
+            )
         )
-        File("src/test/resources/output/output.txt").delete()
     }
 
     @Test
     fun zeroCountOfString() {
-        extract(
-            listOf(
-                "src/test/resources/input/numString.txt",
-                "src/test/resources/input/123.txt",
-                "src/test/resources/input/poem.txt"
-            ), "src/test/resources/output/output.txt", 0, null
-        )
         assertEquals(
-            File("src/test/resources/output/expectedOutput5.txt").readLines(),
-            File("src/test/resources/output/output.txt").readLines()
+            mapOf(filePoem to listOf(), file123 to listOf(), fileNumString to listOf<String>()),
+            extract(
+                listOf(
+                    fileNumString,
+                    file123,
+                    filePoem
+                ), 0, null
+            )
         )
-        File("src/test/resources/output/output.txt").delete()
     }
 
     @Test
@@ -93,7 +96,6 @@ class Tests {
         assertThrows(FileNotFoundException::class.java) {
             extract(
                 listOf("src/test/resources/input/fileNotFound.txt"),
-                "src/test/resources/output/outputNotFound.txt",
                 null,
                 12345
             )
@@ -104,8 +106,7 @@ class Tests {
     fun invalidFileFormat() {
         assertThrows(IllegalArgumentException::class.java) {
             extract(
-                listOf("src/test/resources/input/word.docx"),
-                "src/test/resources/output/outputNotFound.txt",
+                listOf(fileWord),
                 null,
                 12345
             )
@@ -114,7 +115,6 @@ class Tests {
 
     @Test
     fun negativeCount() {
-        assertThrows(IllegalArgumentException::class.java) { main(arrayOf("-c", "-3", "qwerty")) }
         assertThrows(IllegalArgumentException::class.java) { main(arrayOf("-n", "-12345", "Negative Count")) }
     }
 
@@ -124,18 +124,15 @@ class Tests {
     }
 
     @Test
-    fun outputToCommandLine() {
-        main(arrayOf("-c", "15", "12345"))
-    }
-
-    @Test
     fun textFromCommandLine() {
-        extract(
-            listOf(
-                "123456789",
-                "qwerty",
-                "qazqazqazqaz1"
-            ), "src/test/resources/output/output.txt", null, 7
+        output(
+            extract(
+                listOf(
+                    "123456789",
+                    "qwerty",
+                    "qazqazqazqaz1"
+                ), null, 7
+            ), "src/test/resources/output/output.txt"
         )
         assertEquals(
             File("src/test/resources/output/expectedOutput6.txt").readLines(),

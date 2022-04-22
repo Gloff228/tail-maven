@@ -2,11 +2,16 @@ import kotlinx.cli.*
 import java.io.File
 import java.io.FileNotFoundException
 
+const val defaultCount = 10
+const val exceptionFileAndText = "String cannot be used with a name on the same line"
+
 fun main(args: Array<String>) {
-    parse(args)
+    val (inputName, outputFile, countStringsAndSymbols) = parse(args)
+    val (countStrings, countSymbols) = countStringsAndSymbols
+    output(extract(inputName, countStrings, countSymbols), outputFile)
 }
 
-fun parse(args: Array<String>) {
+fun parse(args: Array<String>): Triple<List<String>, String?, Pair<Int?, Int?>> {
     val parser = ArgParser("tail")
     val extractSymbols by parser.option(
         ArgType.Int,
@@ -23,42 +28,43 @@ fun parse(args: Array<String>) {
 
     parser.parse(args)
 
-    when {
-        extractSymbols != null && extractStrings != null -> throw IllegalArgumentException("Can't use both -c and -n at the same time")
-        extractSymbols == null && extractStrings == null -> extract(input, output, 10, null)
-        extractSymbols != null && extractSymbols!! < 0 || extractStrings != null && extractStrings!! < 0 -> throw IllegalArgumentException(
-            "Negative numbers cannot be used"
-        )
-        else -> extract(input, output, extractStrings, extractSymbols)
-    }
+    return Triple(input, output, Pair(extractStrings, extractSymbols))
 }
 
-fun extract(inputFiles: List<String>, outputFile: String?, countStrings: Int?, countSymbols: Int?) {
+fun extract(inputFiles: List<String>, countStrings: Int?, countSymbols: Int?): MutableMap<String, MutableList<String>> {
+    //исключения
+    when {
+        countSymbols != null && countStrings != null -> throw IllegalArgumentException("Can't use both -c and -n at the same time")
+        countSymbols != null && countSymbols < 0 || countStrings != null && countStrings < 0 -> throw IllegalArgumentException(
+            "Negative numbers cannot be used"
+        )
+    }
+
     val fileStrings = mutableMapOf<String, MutableList<String>>()
     val isFile = File(inputFiles[0]).exists()
     var cmdStringNumber = 0
 
-    for (file in inputFiles) {
-        if (File(file).exists()) {
+    for (name in inputFiles) {
+        if (File(name).exists()) {
             //исключения
-            if (!isFile) throw IllegalArgumentException("String cannot be used with a file on the same line")
-            if (file.substring(file.length - 4, file.length) != ".txt")
-                throw IllegalArgumentException("Invalid file format")
+            if (!isFile) throw IllegalArgumentException(exceptionFileAndText)
+            if (name.length <= 4 || name.substring(name.length - 4, name.length) != ".txt")
+                throw IllegalArgumentException("Invalid name format")
 
-            fileStrings[file] = mutableListOf()
-            val stringsOfFile = File(file).readLines() //разделение текста файла на строки
-            extractSymbolOrString(stringsOfFile, fileStrings[file]!!, countSymbols, countStrings)
+            fileStrings[name] = mutableListOf()
+            val stringsOfFile = File(name).readLines() //разделение текста файла на строки
+            extractSymbolOrString(stringsOfFile, fileStrings[name]!!, countSymbols, countStrings)
         } else {
             //исключения
-            if (isFile) throw IllegalArgumentException("String cannot be used with a file on the same line")
-            if (file.length > 4 && file.substring(file.length - 4, file.length) == ".txt")
-                throw FileNotFoundException("Called file does not exist") //исключение, если файла не существует
+            if (isFile) throw IllegalArgumentException(exceptionFileAndText)
+            if (name.length > 4 && name.substring(name.length - 4, name.length) == ".txt")
+                throw FileNotFoundException("Called name does not exist") //исключение, если файла не существует
 
             cmdStringNumber++
 
             fileStrings["cmd string $cmdStringNumber"] = mutableListOf()
             val lineSep = System.lineSeparator().toString().replace("\r", "\\r").replace("\n", "\\n")
-            val stringsOfCommandLine = file.split(lineSep)
+            val stringsOfCommandLine = name.split(lineSep)
 
             extractSymbolOrString(
                 stringsOfCommandLine,
@@ -69,7 +75,7 @@ fun extract(inputFiles: List<String>, outputFile: String?, countStrings: Int?, c
 
         }
     }
-    output(fileStrings, outputFile)
+    return fileStrings
 }
 
 fun extractSymbolOrString(
@@ -78,18 +84,21 @@ fun extractSymbolOrString(
     countSymbols: Int?,
     countStrings: Int?
 ) {
-    if (countStrings != null) extractStrings(stringsOfFile, futureTextOfFile, countStrings)
-    else extractSymbols(stringsOfFile, futureTextOfFile, countSymbols!!)
+    if (countSymbols != null) countSymbols(stringsOfFile, futureTextOfFile, countSymbols)
+    else {
+        if (countStrings == null) countStrings(stringsOfFile, futureTextOfFile, defaultCount)
+        else countStrings(stringsOfFile, futureTextOfFile, countStrings)
+    }
 }
 
-fun extractStrings(stringsOfFile: List<String>, textOfFile: MutableList<String>, count: Int) {
+fun countStrings(stringsOfFile: List<String>, futureTextOfFile: MutableList<String>, count: Int) {
     var countForFile = count
     if (count >= stringsOfFile.size) countForFile =
         stringsOfFile.size //сокращение выводимых строк до количества строк в файле
-    for (line in (stringsOfFile.size - countForFile) until stringsOfFile.size) textOfFile.add(stringsOfFile[line])
+    for (line in (stringsOfFile.size - countForFile) until stringsOfFile.size) futureTextOfFile.add(stringsOfFile[line])
 }
 
-fun extractSymbols(stringsOfFile: List<String>, textOfFile: MutableList<String>, count: Int) {
+fun countSymbols(stringsOfFile: List<String>, futureTextOfFile: MutableList<String>, count: Int) {
     if (count != 0) {
         var string = ""
         for (line in stringsOfFile.reversed()) {
@@ -99,7 +108,7 @@ fun extractSymbols(stringsOfFile: List<String>, textOfFile: MutableList<String>,
                 break
             }
         }
-        textOfFile.add(string)
+        futureTextOfFile.add(string)
     }
 }
 
